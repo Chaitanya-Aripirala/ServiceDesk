@@ -1,9 +1,12 @@
 import axios from 'axios';
 
-// In production (Render), VITE_API_URL points to the deployed backend.
-// In development, '/api' is proxied to localhost:5000 via vite.config.js
+// Production: Render backend URL
+// Development: /api is proxied to localhost:5000 via vite.config.js
+const PROD_API = 'https://servicedesk-3t07.onrender.com/api';
+const DEV_API = '/api';
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: import.meta.env.PROD ? PROD_API : (import.meta.env.VITE_API_URL || DEV_API),
   headers: {
     'Content-Type': 'application/json',
   },
