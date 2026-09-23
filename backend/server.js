@@ -20,17 +20,18 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'https://servicedesk-3t07.onrender.com',
-  /\.onrender\.com$/, // allow any Render subdomain (frontend static site)
+  /\.onrender\.com$/,          // any Render subdomain
+  /\.vercel\.app$/,            // any Vercel subdomain
+  'https://service-desk-chaitanya-aripiralas-projects.vercel.app',
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, Postman)
+    // Allow requests with no origin (curl, Postman, mobile)
     if (!origin) return callback(null, true);
-    const isAllowed =
-      allowedOrigins.some(o =>
-        typeof o === 'string' ? o === origin : o.test(origin)
-      );
+    const isAllowed = allowedOrigins.some(o =>
+      typeof o === 'string' ? o === origin : o.test(origin)
+    );
     callback(null, isAllowed ? origin : false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
