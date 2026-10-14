@@ -19,20 +19,26 @@ export const PriorityBadge = ({ priority }) => {
 
 export const StatusBadge = ({ status }) => {
   const s = status || 'Open';
+  const isSolved = s === 'Resolved' || s === 'Solved';
   const classMap = {
     Open: 'badge-open',
     Assigned: 'badge-assigned',
     'In-Progress': 'badge-in-progress',
     'Pending-User': 'badge-pending-user',
     Resolved: 'badge-resolved',
+    Solved: 'badge-resolved',
     Closed: 'badge-closed',
     Escalated: 'badge-escalated',
     Reopened: 'badge-critical',
   };
 
   return (
-    <span className={`badge ${classMap[s] || 'badge-open'}`}>
-      {s}
+    <span
+      className={`badge ${classMap[s] || 'badge-open'}`}
+      style={isSolved ? { display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 700 } : {}}
+    >
+      {isSolved && <span style={{ fontSize: '0.8rem', lineHeight: 1 }}>✓</span>}
+      {isSolved ? 'Solved' : s}
     </span>
   );
 };

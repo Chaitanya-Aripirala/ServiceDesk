@@ -234,7 +234,7 @@ export const Dashboard = () => {
                     deadline={t.slaResolutionDeadline}
                     createdAt={t.createdAt}
                     isBreached={t.isSlaResolutionBreached}
-                    isCompleted={['Resolved', 'Closed'].includes(t.status)}
+                    isCompleted={['Resolved', 'Solved', 'Closed'].includes(t.status)}
                     completedAt={t.resolvedAt}
                     label="Resolution SLA"
                   />

@@ -13,7 +13,10 @@ import {
   ChevronRight,
   Sparkles,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  Wrench,
+  Inbox,
+  CheckCircle2
 } from 'lucide-react';
 import { PriorityBadge, StatusBadge } from '../../components/common/Badge';
 import { SLAProgress } from '../../components/common/SLAProgress';
@@ -54,6 +57,30 @@ export const TicketList = () => {
   useEffect(() => {
     fetchTickets();
   }, [statusFilter, priorityFilter, categoryFilter, breachedOnly, myQueueOnly]);
+
+  const handleReceiveTicket = async (ticketId, e) => {
+    e?.stopPropagation();
+    try {
+      await ticketService.assignTicket(ticketId, user._id);
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to receive ticket:', err);
+    }
+  };
+
+  const handleQuickFix = async (ticketId, e) => {
+    e?.stopPropagation();
+    try {
+      await ticketService.updateStatus(ticketId, {
+        status: 'Resolved',
+        resolutionSummary: 'Issue fixed and marked as solved by Administrator.',
+        rootCause: 'Root cause identified and corrected.',
+      });
+      fetchTickets();
+    } catch (err) {
+      console.error('Failed to fix issue:', err);
+    }
+  };
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -302,20 +329,52 @@ export const TicketList = () => {
                         deadline={t.slaResolutionDeadline}
                         createdAt={t.createdAt}
                         isBreached={t.isSlaResolutionBreached}
-                        isCompleted={['Resolved', 'Closed'].includes(t.status)}
+                        isCompleted={['Resolved', 'Solved', 'Closed'].includes(t.status)}
                         completedAt={t.resolvedAt}
                         label="SLA Target"
                       />
                     </td>
 
-                    <td>
-                      <Link
-                        to={`/tickets/${t._id}`}
-                        className="btn btn-secondary btn-sm"
-                        style={{ padding: '0.3rem 0.6rem' }}
-                      >
-                        Details <ChevronRight size={14} />
-                      </Link>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {(isAdmin || isTechnician || isManager) && !['Resolved', 'Solved', 'Closed'].includes(t.status) && (
+                          <>
+                            {t.assignedTo?._id !== user?._id && (
+                              <button
+                                onClick={(e) => handleReceiveTicket(t._id, e)}
+                                className="btn btn-secondary btn-sm"
+                                style={{ padding: '0.25rem 0.5rem', fontSize: '0.725rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                title="Receive and take ownership of this ticket"
+                              >
+                                <Inbox size={12} /> Receive
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => handleQuickFix(t._id, e)}
+                              className="btn btn-success btn-sm font-bold"
+                              style={{
+                                padding: '0.25rem 0.55rem',
+                                fontSize: '0.725rem',
+                                backgroundColor: '#10b981',
+                                color: '#fff',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                              }}
+                              title="Fix this issue and mark status as Solved"
+                            >
+                              <Wrench size={12} /> Fix Issue
+                            </button>
+                          </>
+                        )}
+                        <Link
+                          to={`/tickets/${t._id}`}
+                          className="btn btn-secondary btn-sm"
+                          style={{ padding: '0.25rem 0.55rem', fontSize: '0.725rem' }}
+                        >
+                          Details <ChevronRight size={13} />
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

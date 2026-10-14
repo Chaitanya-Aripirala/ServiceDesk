@@ -383,17 +383,17 @@ const updateTicketStatus = async (req, res) => {
     const now = new Date();
 
     // Check First Response timestamp
-    if (!ticket.firstResponseAt && ['In-Progress', 'Pending-User', 'Resolved', 'Closed'].includes(status)) {
+    if (!ticket.firstResponseAt && ['In-Progress', 'Pending-User', 'Resolved', 'Solved', 'Closed'].includes(status)) {
       ticket.firstResponseAt = now;
       if (ticket.slaResponseDeadline && now > ticket.slaResponseDeadline) {
         ticket.isSlaResponseBreached = true;
       }
     }
 
-    if (status === 'Resolved') {
+    if (status === 'Resolved' || status === 'Solved') {
       ticket.resolvedAt = now;
-      ticket.resolutionSummary = resolutionSummary || 'Resolved by IT Support Team';
-      ticket.rootCause = rootCause || 'Standard operational resolution';
+      ticket.resolutionSummary = resolutionSummary || 'Issue fixed and marked as solved';
+      ticket.rootCause = rootCause || 'Root cause identified and corrected';
       
       if (ticket.slaResolutionDeadline && now > ticket.slaResolutionDeadline) {
         ticket.isSlaResolutionBreached = true;
@@ -402,8 +402,8 @@ const updateTicketStatus = async (req, res) => {
       // Notify Requester to confirm and rate
       await Notification.create({
         recipient: ticket.requester,
-        title: `✅ Ticket Resolved: ${ticket.ticketNumber}`,
-        message: `Your ticket "${ticket.title}" has been marked as resolved. Please review and provide your rating.`,
+        title: `✅ Ticket Solved: ${ticket.ticketNumber}`,
+        message: `Your ticket "${ticket.title}" has been fixed and marked as solved. Please review and provide your rating.`,
         type: 'TICKET_UPDATED',
         link: `/tickets/${ticket._id}`,
       });

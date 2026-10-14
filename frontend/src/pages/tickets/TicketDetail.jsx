@@ -18,7 +18,9 @@ import {
   Sparkles,
   RotateCcw,
   ShieldAlert,
-  Plus
+  Plus,
+  Wrench,
+  Inbox
 } from 'lucide-react';
 import { PriorityBadge, StatusBadge, RoleBadge } from '../../components/common/Badge';
 import { SLAProgress } from '../../components/common/SLAProgress';
@@ -67,6 +69,14 @@ export const TicketDetail = () => {
 
   const [showReopenModal, setShowReopenModal] = useState(false);
   const [reopenReason, setReopenReason] = useState('');
+
+  // Fix Issue & Receive Ticket States
+  const [showFixModal, setShowFixModal] = useState(false);
+  const [fixSummary, setFixSummary] = useState('');
+  const [fixRootCause, setFixRootCause] = useState('');
+  const [fixing, setFixing] = useState(false);
+  const [receiving, setReceiving] = useState(false);
+  const [actionSuccess, setActionSuccess] = useState('');
 
   const fetchTicketDetails = async () => {
     try {
@@ -186,6 +196,39 @@ export const TicketDetail = () => {
     }
   };
 
+  const handleReceiveTicket = async () => {
+    setReceiving(true);
+    setActionSuccess('');
+    try {
+      await ticketService.assignTicket(id, user._id);
+      setActionSuccess('🎉 Ticket received successfully! You are now the assigned technician.');
+      fetchTicketDetails();
+    } catch (err) {
+      console.error('Failed to receive ticket:', err);
+    } finally {
+      setReceiving(false);
+    }
+  };
+
+  const handleFixIssue = async () => {
+    setFixing(true);
+    setActionSuccess('');
+    try {
+      await ticketService.updateStatus(id, {
+        status: 'Resolved',
+        resolutionSummary: fixSummary.trim() || 'Issue diagnosed and solved successfully by Administrator.',
+        rootCause: fixRootCause.trim() || 'Root cause identified and corrected.',
+      });
+      setShowFixModal(false);
+      setActionSuccess('✅ Issue has been fixed! The ticket status is now Solved.');
+      fetchTicketDetails();
+    } catch (err) {
+      console.error('Failed to fix issue:', err);
+    } finally {
+      setFixing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="page-wrapper" style={{ textAlign: 'center', padding: '4rem 0' }}>
@@ -206,19 +249,87 @@ export const TicketDetail = () => {
     );
   }
 
-  const isResolved = ['Resolved', 'Closed'].includes(ticket.status);
+  const isResolved = ['Resolved', 'Solved', 'Closed'].includes(ticket.status);
 
   return (
     <div className="page-wrapper fade-in">
+      {/* Top Action Notification Banner */}
+      {actionSuccess && (
+        <div
+          style={{
+            padding: '0.85rem 1.25rem',
+            borderRadius: '8px',
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            color: '#34d399',
+            fontWeight: 600,
+            fontSize: '0.875rem',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            boxShadow: '0 0 15px rgba(16, 185, 129, 0.2)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <CheckCircle2 size={18} />
+            {actionSuccess}
+          </div>
+          <button
+            onClick={() => setActionSuccess('')}
+            style={{ background: 'none', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 800, fontSize: '1rem' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Top Breadcrumb & Action Bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
         <button onClick={() => navigate('/tickets')} className="btn btn-secondary btn-sm">
           <ArrowLeft size={14} /> Back to Tickets
         </button>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
           {(isTechnician || isManager || isAdmin) && (
             <>
+              {/* Receive Ticket Button */}
+              {ticket.assignedTo?._id !== user?._id && !isResolved && (
+                <button
+                  onClick={handleReceiveTicket}
+                  disabled={receiving}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', backgroundColor: '#6366f1' }}
+                  title="Receive and assign this ticket to yourself"
+                >
+                  <Inbox size={14} /> {receiving ? 'Receiving...' : 'Receive Ticket'}
+                </button>
+              )}
+
+              {/* Fix the Issue Button */}
+              {!isResolved && (
+                <button
+                  onClick={() => {
+                    setFixSummary('Issue diagnosed and solved successfully by Administrator.');
+                    setFixRootCause('Root cause identified and corrected.');
+                    setShowFixModal(true);
+                  }}
+                  className="btn btn-success btn-sm font-bold"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    backgroundColor: '#10b981',
+                    borderColor: '#059669',
+                    color: '#fff',
+                    boxShadow: '0 0 14px rgba(16, 185, 129, 0.4)',
+                  }}
+                  title="Fix the issue and mark ticket status as Solved"
+                >
+                  <Wrench size={14} /> Fix the Issue
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setSelectedTech(ticket.assignedTo?._id || '');
@@ -331,6 +442,91 @@ export const TicketDetail = () => {
         >
           {ticket.description}
         </div>
+
+        {/* Dedicated Admin Workflow Quick-Action Card */}
+        {(isAdmin || isTechnician || isManager) && !isResolved && (
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '1.1rem 1.35rem',
+              borderRadius: '8px',
+              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '1rem',
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 700, color: '#fff', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <Wrench size={16} color="#34d399" />
+                <span>Admin Quick Actions</span>
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                {ticket.assignedTo?._id === user?._id
+                  ? '✓ You have received this ticket. Click "Fix the Issue" once resolved.'
+                  : 'Receive this ticket to take ownership, then click "Fix the Issue" to solve it.'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.6rem' }}>
+              {ticket.assignedTo?._id !== user?._id && (
+                <button
+                  onClick={handleReceiveTicket}
+                  disabled={receiving}
+                  className="btn btn-primary btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                >
+                  <Inbox size={14} /> {receiving ? 'Receiving...' : 'Receive Ticket'}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setFixSummary('Issue diagnosed and solved successfully by Administrator.');
+                  setFixRootCause('Root cause identified and corrected.');
+                  setShowFixModal(true);
+                }}
+                className="btn btn-success btn-sm font-bold"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  backgroundColor: '#10b981',
+                  color: '#fff',
+                  boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
+                }}
+              >
+                <CheckCircle2 size={15} /> Fix the Issue
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Solved Status Callout Banner */}
+        {isResolved && (
+          <div
+            style={{
+              marginTop: '1.25rem',
+              padding: '1rem 1.25rem',
+              borderRadius: '8px',
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              color: '#34d399',
+            }}
+          >
+            <CheckCircle2 size={24} color="#34d399" />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>✓ Issue Solved</div>
+              <div style={{ fontSize: '0.825rem', color: '#e2e8f0', marginTop: '0.15rem' }}>
+                {ticket.resolutionSummary || 'This issue has been fixed and verified.'}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Resolution details banner if resolved */}
         {ticket.resolutionSummary && (
@@ -755,6 +951,76 @@ export const TicketDetail = () => {
           <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
             <button onClick={() => setShowStatusModal(false)} className="btn btn-secondary btn-sm">Cancel</button>
             <button onClick={handleUpdateStatus} className="btn btn-primary btn-sm">Save Status</button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Fix the Issue Modal */}
+      <Modal
+        isOpen={showFixModal}
+        onClose={() => setShowFixModal(false)}
+        title="🛠️ Fix the Issue"
+      >
+        <div>
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              borderRadius: '6px',
+              background: 'rgba(16, 185, 129, 0.12)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              color: '#34d399',
+              fontSize: '0.85rem',
+              marginBottom: '1.25rem',
+              lineHeight: 1.5,
+            }}
+          >
+            Marking this issue as fixed will update the ticket status to <strong>Solved</strong>, complete the resolution SLA clock, and notify the requester.
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Resolution Summary</label>
+            <textarea
+              rows={3}
+              className="form-textarea"
+              placeholder="Explain how the issue was fixed..."
+              value={fixSummary}
+              onChange={(e) => setFixSummary(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="form-group" style={{ marginTop: '1rem' }}>
+            <label className="form-label">Root Cause (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. Configuration desync, system update, hardware replacement"
+              className="form-input"
+              value={fixRootCause}
+              onChange={(e) => setFixRootCause(e.target.value)}
+            />
+          </div>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <button type="button" onClick={() => setShowFixModal(false)} className="btn btn-secondary btn-sm">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleFixIssue}
+              disabled={fixing}
+              className="btn btn-success btn-sm font-bold"
+              style={{
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)',
+              }}
+            >
+              <CheckCircle2 size={15} /> {fixing ? 'Solving Issue...' : '✓ Confirm & Mark Solved'}
+            </button>
           </div>
         </div>
       </Modal>

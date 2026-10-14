@@ -11,7 +11,7 @@ const getDashboardAnalytics = async (req, res) => {
     const openTickets = await Ticket.countDocuments({ status: { $in: ['Open', 'Assigned', 'Reopened'] } });
     const inProgressTickets = await Ticket.countDocuments({ status: 'In-Progress' });
     const pendingUserTickets = await Ticket.countDocuments({ status: 'Pending-User' });
-    const resolvedTickets = await Ticket.countDocuments({ status: { $in: ['Resolved', 'Closed'] } });
+    const resolvedTickets = await Ticket.countDocuments({ status: { $in: ['Resolved', 'Solved', 'Closed'] } });
     const escalatedTickets = await Ticket.countDocuments({ status: 'Escalated' });
 
     // SLA Metrics
@@ -19,7 +19,7 @@ const getDashboardAnalytics = async (req, res) => {
     const breachedResolution = await Ticket.countDocuments({ isSlaResolutionBreached: true });
 
     // Calculate SLA Compliance Rate
-    const resolvedOrClosed = await Ticket.find({ status: { $in: ['Resolved', 'Closed'] } });
+    const resolvedOrClosed = await Ticket.find({ status: { $in: ['Resolved', 'Solved', 'Closed'] } });
     const compliantResolutionCount = resolvedOrClosed.filter(t => !t.isSlaResolutionBreached).length;
     const slaComplianceRate = resolvedOrClosed.length > 0
       ? Math.round((compliantResolutionCount / resolvedOrClosed.length) * 100)
@@ -87,7 +87,7 @@ const getDashboardAnalytics = async (req, res) => {
         });
         const resolvedCount = await Ticket.countDocuments({
           assignedTo: tech._id,
-          status: { $in: ['Resolved', 'Closed'] }
+          status: { $in: ['Resolved', 'Solved', 'Closed'] }
         });
         const breachedCount = await Ticket.countDocuments({
           assignedTo: tech._id,
