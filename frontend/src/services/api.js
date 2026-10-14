@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// Always use the deployed Render backend in production builds (Vercel/Render Static)
 // In local dev, /api is proxied to localhost:5000 via vite.config.js
+// In production builds (Vercel/Render), use VITE_API_URL if configured, otherwise default to deployed Render backend
 const API_BASE = import.meta.env.PROD
-  ? 'https://servicedesk-3t07.onrender.com/api'
+  ? (import.meta.env.VITE_API_URL && import.meta.env.VITE_API_URL !== '/api'
+      ? import.meta.env.VITE_API_URL
+      : 'https://servicedesk-3t07.onrender.com/api')
   : '/api';
 
 const api = axios.create({
