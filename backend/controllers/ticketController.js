@@ -319,6 +319,10 @@ const assignTicket = async (req, res) => {
       ticket.status = 'Assigned';
     }
 
+    if (!ticket.firstResponseAt && techUser) {
+      ticket.firstResponseAt = new Date();
+    }
+
     ticket.activityTimeline.push({
       action: 'TICKET_ASSIGNED',
       performedBy: req.user._id,
@@ -385,13 +389,16 @@ const updateTicketStatus = async (req, res) => {
     // Check First Response timestamp
     if (!ticket.firstResponseAt && ['In-Progress', 'Pending-User', 'Resolved', 'Solved', 'Closed'].includes(status)) {
       ticket.firstResponseAt = now;
-      if (ticket.slaResponseDeadline && now > ticket.slaResponseDeadline) {
+      if (ticket.slaResponseDeadline && now > ticket.slaResponseDeadline && !['Resolved', 'Solved'].includes(status)) {
         ticket.isSlaResponseBreached = true;
       }
     }
 
     if (status === 'Resolved' || status === 'Solved') {
       ticket.resolvedAt = now;
+      if (!ticket.firstResponseAt) {
+        ticket.firstResponseAt = now;
+      }
       ticket.resolutionSummary = resolutionSummary || 'Issue fixed and marked as solved';
       ticket.rootCause = rootCause || 'Root cause identified and corrected';
       

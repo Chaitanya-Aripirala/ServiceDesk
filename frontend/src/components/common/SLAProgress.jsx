@@ -13,7 +13,14 @@ export const SLAProgress = ({ deadline, createdAt, isBreached, isCompleted, comp
     }
 
     const updateTimer = () => {
-      const now = isCompleted && completedAt ? new Date(completedAt).getTime() : new Date().getTime();
+      if (isCompleted) {
+        setTimeLeftStr(isBreached ? 'Met (SLA Delayed)' : 'Met on Time');
+        setPercentRemaining(100);
+        setStatusColor(isBreached ? 'warning' : 'success');
+        return;
+      }
+
+      const now = new Date().getTime();
       const end = new Date(deadline).getTime();
       const start = createdAt ? new Date(createdAt).getTime() : end - 4 * 60 * 60 * 1000;
       const totalDuration = Math.max(1, end - start);
@@ -69,20 +76,20 @@ export const SLAProgress = ({ deadline, createdAt, isBreached, isCompleted, comp
     <div style={{ background: currentTheme.bg, padding: '0.6rem 0.85rem', borderRadius: '8px', border: `1px solid ${currentTheme.text}35` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
         <span style={{ fontSize: '0.75rem', fontWeight: '600', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-          {isBreached ? <AlertTriangle size={13} color="#f87171" /> : isCompleted ? <CheckCircle2 size={13} color="#34d399" /> : <Clock size={13} color="#94a3b8" />}
+          {isCompleted ? <CheckCircle2 size={13} color={isBreached ? '#fbbf24' : '#34d399'} /> : isBreached ? <AlertTriangle size={13} color="#f87171" /> : <Clock size={13} color="#94a3b8" />}
           {label}
         </span>
         <span style={{ fontSize: '0.78rem', fontWeight: '700', color: currentTheme.text, fontFamily: 'var(--font-mono)' }}>
-          {isCompleted && !isBreached ? 'Met on Time' : timeLeftStr}
+          {isCompleted ? (isBreached ? 'Met (SLA Delayed)' : 'Met on Time') : timeLeftStr}
         </span>
       </div>
 
       <div style={{ width: '100%', height: '5px', background: 'rgba(255,255,255,0.08)', borderRadius: '3px', overflow: 'hidden' }}>
         <div
           style={{
-            width: isCompleted && !isBreached ? '100%' : `${percentRemaining}%`,
+            width: isCompleted ? '100%' : `${percentRemaining}%`,
             height: '100%',
-            backgroundColor: isCompleted && !isBreached ? '#10b981' : currentTheme.bar,
+            backgroundColor: isCompleted ? (isBreached ? '#f59e0b' : '#10b981') : currentTheme.bar,
             transition: 'width 0.5s ease',
           }}
         />

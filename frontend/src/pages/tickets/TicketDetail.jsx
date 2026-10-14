@@ -408,9 +408,9 @@ export const TicketDetail = () => {
               <SLAProgress
                 deadline={ticket.slaResponseDeadline}
                 createdAt={ticket.createdAt}
-                isBreached={ticket.isSlaResponseBreached}
-                isCompleted={!!ticket.firstResponseAt}
-                completedAt={ticket.firstResponseAt}
+                isBreached={!isResolved && ticket.isSlaResponseBreached}
+                isCompleted={!!ticket.firstResponseAt || isResolved}
+                completedAt={ticket.firstResponseAt || ticket.resolvedAt || ticket.updatedAt}
                 label="First Response SLA"
               />
             </div>
@@ -418,9 +418,9 @@ export const TicketDetail = () => {
               <SLAProgress
                 deadline={ticket.slaResolutionDeadline}
                 createdAt={ticket.createdAt}
-                isBreached={ticket.isSlaResolutionBreached}
+                isBreached={!isResolved && ticket.isSlaResolutionBreached}
                 isCompleted={isResolved}
-                completedAt={ticket.resolvedAt}
+                completedAt={ticket.resolvedAt || ticket.updatedAt}
                 label="Resolution SLA"
               />
             </div>
